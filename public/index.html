@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Orbitron:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>POOP LEADERBOARD</h1>
+        </div>
+        <h2>Stopwatch</h2>
+        <div id="display">00:00:00</div>
+        <div class="buttons">
+            <button id="startStopBtn" onclick="startStop()">Start</button>
+            <button id="resetBtn" onclick="reset()">Reset</button>
+        </div>
+        <div id="initialsForm" style="display: none;">
+            <label for="initialsInput">Enter your 3 initials: </label>
+            <input type="text" id="initialsInput" maxlength="3" oninput="this.value = this.value.toUpperCase()">
+            <button onclick="saveInitials()">Save</button>
+        </div>
+        <h2>Leaderboard</h2>
+        <ol id="leaderboard"></ol>
+        <button id="adminBtn" onclick="showAdminForm()">Admin</button>
+        <div id="adminForm" style="display: none;">
+            <label for="adminPassword">Enter Admin Password: </label>
+            <input type="password" id="adminPassword">
+            <button onclick="verifyAdmin()">Submit</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
