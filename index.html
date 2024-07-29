@@ -6,13 +6,86 @@
     <title>Stopwatch</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Orbitron:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: #333;
+        }
+        #display {
+            font-size: 3rem;
+            margin: 20px 0;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .buttons button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #startStopBtn {
+            background-color: #28a745; /* Green color */
+        }
+        #resetBtn {
+            background-color: #dc3545; /* Red color */
+        }
+        #adminBtn {
+            margin-top: 20px;
+        }
+        #initialsForm, #adminForm {
+            margin-top: 20px;
+        }
+        #initialsInput {
+            font-size: 1rem;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        #adminPassword {
+            font-size: 1rem;
+            padding: 5px;
+            margin-right: 10px;
+        }
+        .leaderboard {
+            margin-top: 20px;
+        }
+        .leaderboard li {
+            list-style-type: none;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>SPEEDPOOP LEADERBOARD</h1>
+            <h1>POOP LEADERBOARD</h1>
         </div>
-        <h2>SUBMIT YOUR TIME BELOW</h2>
+        <h2>Stopwatch</h2>
         <div id="display">00:00:00</div>
         <div class="buttons">
             <button id="startStopBtn" onclick="startStop()">Start</button>
@@ -24,14 +97,166 @@
             <button onclick="saveInitials()">Save</button>
         </div>
         <h2>Leaderboard</h2>
-        <ol id="leaderboard"></ol>
-        <button id="adminBtn" onclick="showAdminForm()">Admin Login</button>
+        <ol id="leaderboard" class="leaderboard"></ol>
+        <button id="adminBtn" onclick="showAdminForm()">Admin</button>
         <div id="adminForm" style="display: none;">
             <label for="adminPassword">Enter Admin Password: </label>
             <input type="password" id="adminPassword">
             <button onclick="verifyAdmin()">Submit</button>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
+      import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDCUmgU2RuwLMG_4Xr5v8Xf27gYgLdKB7g",
+        authDomain: "speedpoop-75261.firebaseapp.com",
+        projectId: "speedpoop-75261",
+        storageBucket: "speedpoop-75261.appspot.com",
+        messagingSenderId: "1078815933458",
+        appId: "1:1078815933458:web:15a5b3096aceb905e7c4cb",
+        measurementId: "G-MNXQRKEPEN"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+
+      // Initialize Firestore
+      const db = getFirestore(app);
+
+      let timer;
+      let isRunning = false;
+      let [minutes, seconds, milliseconds] = [0, 0, 0];
+      let currentInitials = '';
+      let isAdmin = false;
+
+      function updateDisplay() {
+        const display = document.getElementById('display');
+        display.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(Math.floor(milliseconds / 10)).padStart(2, '0')}`;
+      }
+
+      function startStop() {
+        const startStopBtn = document.getElementById('startStopBtn');
+        if (isRunning) {
+          clearInterval(timer);
+          startStopBtn.innerText = 'Start';
+          startStopBtn.style.backgroundColor = '#28a745'; // Green color
+          showInitialsForm();
+        } else {
+          timer = setInterval(() => {
+            milliseconds += 10;
+            if (milliseconds === 1000) {
+              milliseconds = 0;
+              seconds++;
+              if (seconds === 60) {
+                seconds = 0;
+                minutes++;
+              }
+            }
+            updateDisplay();
+          }, 10);
+          startStopBtn.innerText = 'Stop';
+          startStopBtn.style.backgroundColor = '#dc3545'; // Red color
+        }
+        isRunning = !isRunning;
+      }
+
+      function reset() {
+        clearInterval(timer);
+        isRunning = false;
+        [minutes, seconds, milliseconds] = [0, 0, 0];
+        updateDisplay();
+        const startStopBtn = document.getElementById('startStopBtn');
+        startStopBtn.innerText = 'Start';
+        startStopBtn.style.backgroundColor = '#28a745'; // Green color
+        hideInitialsForm();
+      }
+
+      function showInitialsForm() {
+        document.getElementById('initialsForm').style.display = 'block';
+      }
+
+      function hideInitialsForm() {
+        document.getElementById('initialsForm').style.display = 'none';
+      }
+
+      async function saveInitials() {
+        const initialsInput = document.getElementById('initialsInput');
+        if (initialsInput.value.length === 3) {
+          currentInitials = initialsInput.value;
+          initialsInput.value = '';
+          hideInitialsForm();
+          await saveTime(currentInitials);
+        } else {
+          alert('Please enter exactly 3 initials.');
+        }
+      }
+
+      async function saveTime(initials) {
+        const totalMilliseconds = (minutes * 60 * 1000) + (seconds * 1000) + milliseconds;
+        const leaderboardRef = collection(db, 'leaderboard');
+        await addDoc(leaderboardRef, {
+          initials,
+          minutes,
+          seconds,
+          milliseconds,
+          totalMilliseconds
+        });
+        updateLeaderboard();
+      }
+
+      async function updateLeaderboard() {
+        const leaderboardRef = collection(db, 'leaderboard');
+        const q = query(leaderboardRef, orderBy('totalMilliseconds'));
+        const querySnapshot = await getDocs(q);
+        const leaderboardElement = document.getElementById('leaderboard');
+        leaderboardElement.innerHTML = '';
+        querySnapshot.forEach((doc, index) => {
+          const entry = doc.data();
+          const listItem = document.createElement('li');
+          listItem.innerText = `${index + 1}. ${entry.initials} - ${String(entry.minutes).padStart(2, '0')}:${String(entry.seconds).padStart(2, '0')}:${String(Math.floor(entry.milliseconds / 10)).padStart(2, '0')}`;
+          listItem.setAttribute('data-id', doc.id);
+          if (isAdmin) {
+            listItem.style.cursor = 'pointer';
+            listItem.title = 'Click to remove this score';
+            listItem.addEventListener('click', () => removeScore(doc.id));
+          }
+          leaderboardElement.appendChild(listItem);
+        });
+      }
+
+      function showAdminForm() {
+        document.getElementById('adminForm').style.display = 'block';
+      }
+
+      function hideAdminForm() {
+        document.getElementById('adminForm').style.display = 'none';
+      }
+
+      async function verifyAdmin() {
+        const adminPassword = document.getElementById('adminPassword').value;
+        if (adminPassword === '1232') {
+          isAdmin = true;
+          hideAdminForm();
+          updateLeaderboard(); // Update the leaderboard to make scores removable
+        } else {
+          alert('Incorrect admin password.');
+        }
+      }
+
+      async function removeScore(id) {
+        const docRef = doc(db, 'leaderboard', id);
+        await deleteDoc(docRef);
+        updateLeaderboard(); // Refresh the leaderboard after removal
+      }
+
+      // Initial leaderboard fetch
+      updateLeaderboard();
+    </script>
 </body>
 </html>
