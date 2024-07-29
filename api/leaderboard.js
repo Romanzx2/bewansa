@@ -1,21 +1,23 @@
-import { writeFile, readFile, existsSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-const leaderboardDir = resolve(process.cwd(), 'data');
-const leaderboardPath = join(leaderboardDir, 'leaderboard.json');
+const leaderboardFilePath = path.join(process.cwd(), 'data', 'leaderboard.json');
 
-if (!existsSync(leaderboardDir)) {
-    mkdirSync(leaderboardDir, { recursive: true });
+async function initializeLeaderboard() {
+    try {
+        await fs.access(leaderboardFilePath);
+    } catch (err) {
+        await fs.writeFile(leaderboardFilePath, JSON.stringify([]));
+    }
 }
 
 export default async function handler(req, res) {
+    await initializeLeaderboard(); // Ensure file is initialized
+
     switch (req.method) {
         case 'GET':
             try {
-                if (!existsSync(leaderboardPath)) {
-                    await writeFile(leaderboardPath, JSON.stringify([]));
-                }
-                const data = await readFile(leaderboardPath, 'utf-8');
+                const data = await fs.readFile(leaderboardFilePath, 'utf-8');
                 res.status(200).json(JSON.parse(data));
             } catch (err) {
                 res.status(500).json({ error: 'Failed to read leaderboard data' });
@@ -24,13 +26,10 @@ export default async function handler(req, res) {
         case 'POST':
             try {
                 const newEntry = req.body;
-                let data = [];
-                if (existsSync(leaderboardPath)) {
-                    data = JSON.parse(await readFile(leaderboardPath, 'utf-8'));
-                }
+                const data = JSON.parse(await fs.readFile(leaderboardFilePath, 'utf-8'));
                 data.push(newEntry);
                 data.sort((a, b) => a.totalMilliseconds - b.totalMilliseconds);
-                await writeFile(leaderboardPath, JSON.stringify(data, null, 2));
+                await fs.writeFile(leaderboardFilePath, JSON.stringify(data, null, 2));
                 res.status(200).json(newEntry);
             } catch (err) {
                 res.status(500).json({ error: 'Failed to save leaderboard data' });
@@ -39,12 +38,9 @@ export default async function handler(req, res) {
         case 'DELETE':
             try {
                 const { index } = req.body;
-                if (!existsSync(leaderboardPath)) {
-                    return res.status(404).json({ error: 'Leaderboard not found' });
-                }
-                let data = JSON.parse(await readFile(leaderboardPath, 'utf-8'));
+                const data = JSON.parse(await fs.readFile(leaderboardFilePath, 'utf-8'));
                 data.splice(index, 1);
-                await writeFile(leaderboardPath, JSON.stringify(data, null, 2));
+                await fs.writeFile(leaderboardFilePath, JSON.stringify(data, null, 2));
                 res.status(200).json({ success: true });
             } catch (err) {
                 res.status(500).json({ error: 'Failed to remove leaderboard entry' });
